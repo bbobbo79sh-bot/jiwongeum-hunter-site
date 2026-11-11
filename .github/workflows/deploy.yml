@@ -1,0 +1,47 @@
+name: 사이트 만들어 올리기
+
+# 언제 돌아가나: 자료/월별 파일을 올렸을 때, 매일 아침 7시 30분(한국시간, 마감 지난 항목 표시를 오늘 기준으로 새로 만듦), 손으로 돌릴 때
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 22 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 사이트 만들기
+        run: node 만들기.js
+        env:
+          TZ: Asia/Seoul
+          SITE_BASE: ${{ vars.SITE_BASE }}         # 도메인 연결 전 미리보기 때만 /jiwongeum-hunter-site, 연결 뒤에는 비움
+          SITE_NOINDEX: ${{ vars.SITE_NOINDEX }}   # 1 이면 검색에 노출하지 않음(영감 확인 전). 공개할 때 비움
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: 결과
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -8,6 +8,7 @@ const path = require('path');
 const 뿌리 = __dirname;
 const 결과 = process.env.SITE_OUT ? path.resolve(process.env.SITE_OUT) : path.join(뿌리, '결과');
 const 시연 = process.env.SITE_DEMO === '1';
+const 비공개 = process.env.SITE_NOINDEX === '1';   // 영감 확인 전 미리보기: 검색 노출 막기(공개할 때 값을 비운다)
 const 읽기 = (f, 기본) => { try { return JSON.parse(fs.readFileSync(path.join(뿌리, '자료', f), 'utf8')); } catch (e) { return 기본; } };
 const 설정 = 읽기('사이트.json', {});
 const 광고 = 읽기('광고.json', {});
@@ -92,7 +93,7 @@ const 틀 = ({ 제목, 설명, 경로, 본문, 현재 = '', 색인 = true, 구�
 <title>${막기(제목)}</title>
 <meta name="description" content="${막기(설명)}">
 <meta name="theme-color" content="#14213D">
-${색인 && !시연 ? '' : '<meta name="robots" content="noindex, nofollow">'}
+${색인 && !시연 && !비공개 ? '' : '<meta name="robots" content="noindex, nofollow">'}
 ${주소 ? `<link rel="canonical" href="${주소}${경로}">` : ''}
 <link rel="icon" href="${길('/logo.png')}" type="image/png">
 <link rel="apple-touch-icon" href="${길('/logo.png')}">
@@ -101,7 +102,7 @@ ${주소 ? `<link rel="canonical" href="${주소}${경로}">` : ''}
 ${주소 ? `<meta property="og:url" content="${주소}${경로}"><meta property="og:image" content="${주소}/logo.png">` : ''}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="${길('/style.css')}">
-${광고켜짐 && !시연 ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${막기(광고.애드센스)}" crossorigin="anonymous"></script>` : ''}
+${광고켜짐 && !시연 && !비공개 ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${막기(광고.애드센스)}" crossorigin="anonymous"></script>` : ''}
 ${구조 ? `<script type="application/ld+json">${구조.replace(/</g, '\\u003c')}</script>` : ''}
 </head>
 <body>
@@ -209,8 +210,8 @@ ${광고켜짐 ? '<li>사이트에는 구글 애드센스(Google AdSense) 광고
 쓰기('style.css', 스타일.trim() + '\n');
 if (fs.existsSync(path.join(뿌리, '자료', 'logo.png'))) fs.copyFileSync(path.join(뿌리, '자료', 'logo.png'), path.join(결과, 'logo.png'));
 if (광고켜짐 && 광고.애드센스) 쓰기('ads.txt', `google.com, pub-${광고.애드센스.replace('ca-pub-', '')}, DIRECT, f08c47fec0942fa0\n`);
-if (설정.도메인 && !시연) 쓰기('CNAME', 설정.도메인.trim() + '\n');
-쓰기('robots.txt', 시연 || !주소 ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\nSitemap: ${주소}/sitemap.xml\n`);
+if (설정.도메인 && !시연 && !기준) 쓰기('CNAME', 설정.도메인.trim() + '\n');
+쓰기('robots.txt', 시연 || 비공개 || !주소 ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\nSitemap: ${주소}/sitemap.xml\n`);
 const 오늘 = new Date().toISOString().slice(0, 10);
 const 경로들 = ['/', '/archive/', '/about/', '/contact/', '/privacy/', ...월들.map((m) => `/m/${m.월}/`), ...월들.flatMap((m) => m.항목.map((x) => `/i/${x.id}/`))];
 쓰기('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${경로들.map((u) => `  <url><loc>${주소}${u}</loc><lastmod>${오늘}</lastmod></url>`).join('\n')}\n</urlset>\n`);
