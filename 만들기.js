@@ -57,6 +57,10 @@ const 동그라미 = '①②③④⑤⑥⑦⑧⑨⑩';
 const 항목번호 = (g, i) => (g.한눈에 && g.한눈에[i] && g.한눈에[i].번호) || 동그라미[i] || String(i + 1);
 const 가이드날짜 = (d) => { const [y, m, dd] = d.split('-').map(Number); return `${y}년 ${m}월 ${dd}일`; };
 
+// ───────── 도구(연말정산 계산기) 읽기 — 자료/도구/yeonmal.json · 페이지 조각은 도구페이지.js ─────────
+const 도구페이지 = require('./도구페이지.js');
+const 연말정산 = 도구페이지.읽기(뿌리);
+
 // ───────── 스타일 (모바일 우선, 남색 #14213D · 종이 #F7F5EF · 형광 연두 #C6F135 · 도장 #D94A2B) ─────────
 const 스타일 = `
 :root{--남:#14213D;--종이:#F7F5EF;--연두:#C6F135;--도장:#D94A2B;--선:#E3DFD3;--흐림:#5B6275;--카드:#fff}
@@ -221,7 +225,7 @@ const 월본문 = (m, 정식경로) => {
   const 분류들 = [...new Set(m.항목.map((x) => x.분류).filter(Boolean))];
   return `<h1><mark>${막기(월글(m))}</mark> 지원금 총정리</h1>
 <p class="부제">${막기(m.머리말 || '')}${m.머리말 ? '<br>' : ''}원문을 확인한 ${m.항목.length}개 · 마지막 확인 ${막기(날짜글(m.확인일))}</p>
-${m === 최신 ? 가이드구역() : ''}
+${m === 최신 ? 가이드구역() + 도구구역() : ''}
 ${분류들.length > 1 ? `<div class="요약줄" role="group" aria-label="분류"><button type="button" class="칩" data-f="" aria-pressed="true">전체</button>${분류들.map((c) => `<button type="button" class="칩" data-f="${막기(c)}" aria-pressed="false">${막기(c)}</button>`).join('')}</div>` : ''}
 ${광고칸('상단')}
 <div id="목록">
@@ -239,6 +243,7 @@ const 가이드카드 = (g) => `<a class="카드 가이드카드" href="${길(`/
   <span class="이름">${막기(g.제목)}</span><span class="기관">${막기(g.부제 || '')}</span>
   <div class="줄정보"><b>구성</b> ${g.항목.length}가지 · 공식 원문 확인 ${막기(확인글(g.확인일))}</div>
 </a>`;
+const 도구구역 = () => (연말정산 ? `<div class="가이드머리"><h2>계산기</h2></div>\n<a class="카드 가이드카드" href="${길('/tools/yeonmal/')}"><span class="딱지">${연말정산.R.귀속연도}년 귀속</span><span class="이름">${막기(연말정산.R.제목)}</span><span class="기관">월세·의료비·교육비·카드·연금저축 — 내 공제 어림하기 (입력값은 서버로 안 보내요)</span></a>` : '');
 const 가이드구역 = () => (가이드들.length ? `<div class="가이드머리"><h2>정리 가이드</h2>${가이드들.length > 1 ? `<a href="${길('/g/')}">전체 보기</a>` : ''}</div>\n${가이드들.slice(0, 3).map(가이드카드).join('\n')}` : '');
 
 const 가이드본문 = (g) => {
@@ -349,6 +354,7 @@ ${준비중 ? '' : `<h2>운영</h2><p>${막기(운영.상호)}${운영.대표자
 <h2>1. 이 사이트가 모으는 정보</h2>
 <ul><li>회원가입이 없고, 이름이나 연락처를 묻지 않습니다.</li>
 ${광고켜짐 ? '<li>사이트에는 구글 애드센스(Google AdSense) 광고가 표시됩니다. 광고가 표시되면 구글이 쿠키와 광고 식별자, 접속 기록 등 행태정보를 수집해 맞춤형 광고에 쓸 수 있습니다. 자세한 내용은 구글 광고 정책(policies.google.com/technologies/ads)을 참고하세요. 브라우저 설정에서 쿠키를 차단·삭제할 수 있고, 구글 광고 설정(adssettings.google.com)에서 맞춤형 광고를 끌 수 있습니다.</li>' : '<li>광고나 이용 분석을 위한 쿠키를 쓰지 않습니다.</li>'}
+${연말정산 ? '<li>연말정산 계산기에 입력한 금액은 이용자의 기기(브라우저) 안에서만 계산되며, 서버로 전송하거나 저장하지 않습니다.</li>' : ''}
 <li>사이트는 GitHub Pages로 운영되며, 접속 기록(IP 주소 등)은 호스팅 사업자(GitHub)가 자체 정책에 따라 처리합니다.</li>
 <li>글꼴을 외부 서비스(jsDelivr)에서 불러오기 때문에 페이지를 열 때 이용자의 IP 주소가 그 서비스에 전달될 수 있습니다.</li>
 <li>문의하시면 답변을 위해 이메일 주소(또는 인스타그램 계정)와 문의 내용을 받고, 답변을 마치면 지체 없이 파기합니다(분쟁 처리가 필요한 경우 3년).</li></ul>
@@ -359,13 +365,20 @@ ${광고켜짐 ? '<li>사이트에는 구글 애드센스(Google AdSense) 광고
 
 쓰기('404.html', 틀({ 제목: `페이지를 찾을 수 없어요 · ${설정.이름}`, 설명: '페이지를 찾을 수 없어요', 경로: '/404.html', 색인: false, 본문: `<h1>찾는 페이지가 없어요</h1><p>주소가 바뀌었거나 지난 항목일 수 있어요.</p><a class="단추" href="${길('/')}">이번 달 총정리 보기</a>` }));
 
-쓰기('style.css', 스타일.trim() + '\n');
+if (연말정산) {
+  쓰기('tools/yeonmal/index.html', 틀({
+    제목: `${연말정산.R.제목} ${연말정산.R.귀속연도}년 귀속 — 월세·의료비·교육비·카드·연금저축 공제 (${확인글(연말정산.R.확인일)} 확인) · ${설정.이름}`,
+    설명: `${연말정산.R.귀속연도}년 귀속 연말정산, 월세·의료비·교육비·보험료·연금저축 세액공제와 카드·주택대출 소득공제를 법령 조문 기준으로 어림해 보는 계산기. 입력값은 서버로 보내지 않아요.`,
+    경로: '/tools/yeonmal/', 본문: 도구페이지.본문(연말정산, 길),
+  }));
+}
+쓰기('style.css', 스타일.trim() + '\n' + (연말정산 ? 도구페이지.스타일.trim() + '\n' : ''));
 if (fs.existsSync(path.join(뿌리, '자료', 'logo.png'))) fs.copyFileSync(path.join(뿌리, '자료', 'logo.png'), path.join(결과, 'logo.png'));
 if (광고켜짐 && 광고.애드센스) 쓰기('ads.txt', `google.com, pub-${광고.애드센스.replace('ca-pub-', '')}, DIRECT, f08c47fec0942fa0\n`);
 if (설정.도메인 && !시연 && !기준) 쓰기('CNAME', 설정.도메인.trim() + '\n');
 쓰기('robots.txt', 시연 || 비공개 || !주소 ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\nSitemap: ${주소}/sitemap.xml\n`);
 const 오늘 = new Date().toISOString().slice(0, 10);
-const 경로들 = ['/', '/archive/', '/about/', '/contact/', '/privacy/', ...(가이드들.length ? ['/g/', ...가이드들.map((g) => `/g/${g.slug}/`)] : []), ...월들.map((m) => `/m/${m.월}/`), ...월들.flatMap((m) => m.항목.map((x) => `/i/${x.id}/`))];
+const 경로들 = ['/', '/archive/', '/about/', '/contact/', '/privacy/', ...(가이드들.length ? ['/g/', ...가이드들.map((g) => `/g/${g.slug}/`)] : []), ...(연말정산 ? ['/tools/yeonmal/'] : []), ...월들.map((m) => `/m/${m.월}/`), ...월들.flatMap((m) => m.항목.map((x) => `/i/${x.id}/`))];
 쓰기('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${경로들.map((u) => `  <url><loc>${주소}${u}</loc><lastmod>${오늘}</lastmod></url>`).join('\n')}\n</urlset>\n`);
 
 console.log(`\n  지원금헌터 사이트를 만들었습니다 → ${결과}`);
